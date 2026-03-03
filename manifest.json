@@ -1,0 +1,8 @@
+{
+  "name": "Design Token Sync",
+  "id": "design-token-sync-generic",
+  "api": "1.0.0",
+  "main": "plugin.js",
+  "ui": "ui.html",
+  "editorType": ["figma"]
+}

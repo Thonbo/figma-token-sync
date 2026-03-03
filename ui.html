@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Inter, -apple-system, sans-serif;
+    font-size: 12px;
+    background: #1e1e1e;
+    color: #e0e0e0;
+    padding: 16px;
+    height: 100%;
+  }
+
+  h1 { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .subtitle { color: #888; font-size: 11px; margin-bottom: 16px; }
+
+  .section { margin-bottom: 14px; }
+  label { display: block; font-size: 11px; color: #999; margin-bottom: 5px; font-weight: 500; }
+
+  input[type="text"], input[type="url"], textarea, select {
+    width: 100%;
+    background: #2c2c2c;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus { border-color: #4f8ef7; }
+  textarea { resize: vertical; min-height: 80px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .tab {
+    flex: 1;
+    padding: 6px;
+    background: #2c2c2c;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .tab.active { background: #4f8ef7; border-color: #4f8ef7; color: #fff; font-weight: 600; }
+
+  .row { display: flex; gap: 8px; }
+  .row .section { flex: 1; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #2c2c2c;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-row input { width: auto; }
+  .checkbox-row span { font-size: 11px; color: #ccc; }
+
+  .btn {
+    width: 100%;
+    padding: 10px;
+    background: #4f8ef7;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+    margin-top: 4px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.secondary { background: #2c2c2c; border: 1px solid #3a3a3a; color: #ccc; font-weight: 500; }
+
+  #status {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.6;
+    display: none;
+  }
+  #status.info  { background: #1a2a3a; border: 1px solid #2a4a6a; color: #7ab3f5; display: block; }
+  #status.ok    { background: #1a2e1a; border: 1px solid #2a5a2a; color: #6fcf6f; display: block; }
+  #status.error { background: #2e1a1a; border: 1px solid #5a2a2a; color: #f07070; display: block; }
+
+  .divider { height: 1px; background: #2c2c2c; margin: 14px 0; }
+</style>
+</head>
+<body>
+
+<h1>Design Token Sync</h1>
+<p class="subtitle">Works with any React / Next.js / Tailwind project</p>
+
+<!-- Source -->
+<div class="section">
+  <label>Token source</label>
+  <div class="tabs">
+    <button class="tab active" id="tab-url" onclick="switchTab('url')">URL</button>
+    <button class="tab" id="tab-paste" onclick="switchTab('paste')">Paste JSON</button>
+  </div>
+
+  <div id="panel-url">
+    <input type="url" id="url-input"
+      placeholder="http://localhost:3000/api/tokens  or  raw GitHub URL"
+      value="http://localhost:3000/api/tokens" />
+    <div style="margin-top:6px; display:flex; gap:6px;">
+      <button class="btn secondary" style="margin-top:0" onclick="fetchTokens()">Fetch</button>
+    </div>
+  </div>
+
+  <div id="panel-paste" style="display:none">
+    <textarea id="json-input" placeholder='Paste design-tokens.json content here…'></textarea>
+  </div>
+</div>
+
+<!-- Collection name -->
+<div class="row">
+  <div class="section">
+    <label>Collection name</label>
+    <input type="text" id="collection-name" value="Design Tokens" />
+  </div>
+  <div class="section">
+    <label>Strip prefix (optional)</label>
+    <input type="text" id="strip-prefix" placeholder="e.g. global/color" value="global/color" />
+  </div>
+</div>
+
+<!-- Options -->
+<div class="section">
+  <label style="cursor:pointer" class="checkbox-row">
+    <input type="checkbox" id="bind-nodes" checked />
+    <span>Bind matching node fills &amp; strokes to variables</span>
+  </label>
+</div>
+
+<div class="divider"></div>
+
+<button class="btn" id="run-btn" onclick="run()" disabled>Create Variables in Figma</button>
+
+<div id="status"></div>
+
+<script>
+  let parsedTokens = null
+
+  function switchTab(tab) {
+    document.getElementById('tab-url').classList.toggle('active', tab === 'url')
+    document.getElementById('tab-paste').classList.toggle('active', tab === 'paste')
+    document.getElementById('panel-url').style.display = tab === 'url' ? '' : 'none'
+    document.getElementById('panel-paste').style.display = tab === 'paste' ? '' : 'none'
+  }
+
+  function setStatus(msg, type = 'info') {
+    const el = document.getElementById('status')
+    el.textContent = msg
+    el.className = type
+  }
+
+  function flattenTokens(obj, prefix, stripPrefix) {
+    const result = {}
+    function walk(o, p) {
+      for (const [key, val] of Object.entries(o)) {
+        if (key.startsWith('$')) continue
+        const name = p ? `${p}/${key}` : key
+        if (val && typeof val === 'object' && '$value' in val) {
+          let tokenName = name
+          if (stripPrefix && tokenName.startsWith(stripPrefix + '/')) {
+            tokenName = tokenName.slice(stripPrefix.length + 1)
+          }
+          result[tokenName] = { value: val.$value, type: val.$type, description: val.$description }
+        } else if (val && typeof val === 'object') {
+          walk(val, name)
+        }
+      }
+    }
+    walk(obj, '')
+    return result
+  }
+
+  function parseJSON(json) {
+    const strip = document.getElementById('strip-prefix').value.trim()
+    const flat = flattenTokens(json, '', strip)
+    const colors = Object.entries(flat).filter(([, t]) => t.type === 'color')
+    return colors
+  }
+
+  async function fetchTokens() {
+    const url = document.getElementById('url-input').value.trim()
+    if (!url) return setStatus('Enter a URL first', 'error')
+    setStatus(`Fetching ${url} …`, 'info')
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      parsedTokens = parseJSON(json)
+      setStatus(`✓ Fetched ${parsedTokens.length} color tokens — ready to create`, 'ok')
+      document.getElementById('run-btn').disabled = false
+    } catch (e) {
+      setStatus(`Fetch failed: ${e.message}\n\nMake sure your dev server is running and has an /api/tokens endpoint.`, 'error')
+    }
+  }
+
+  function loadPasted() {
+    const raw = document.getElementById('json-input').value.trim()
+    if (!raw) return
+    try {
+      const json = JSON.parse(raw)
+      parsedTokens = parseJSON(json)
+      setStatus(`✓ Parsed ${parsedTokens.length} color tokens — ready to create`, 'ok')
+      document.getElementById('run-btn').disabled = false
+    } catch (e) {
+      setStatus(`Invalid JSON: ${e.message}`, 'error')
+    }
+  }
+
+  document.getElementById('json-input').addEventListener('input', loadPasted)
+
+  function run() {
+    if (!parsedTokens || parsedTokens.length === 0) return setStatus('No tokens loaded', 'error')
+    const collectionName = document.getElementById('collection-name').value.trim() || 'Design Tokens'
+    const bindNodes = document.getElementById('bind-nodes').checked
+    setStatus(`Creating ${parsedTokens.length} variables in "${collectionName}" …`, 'info')
+    document.getElementById('run-btn').disabled = true
+    parent.postMessage({
+      pluginMessage: { type: 'create-variables', tokens: parsedTokens, collectionName, bindNodes }
+    }, '*')
+  }
+
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage
+    if (!msg) return
+    if (msg.type === 'done') {
+      setStatus(`✅ ${msg.created} variables created, ${msg.updated} updated · ${msg.bound} nodes bound`, 'ok')
+      document.getElementById('run-btn').disabled = false
+    }
+    if (msg.type === 'error') {
+      setStatus(`❌ ${msg.message}`, 'error')
+      document.getElementById('run-btn').disabled = false
+    }
+    if (msg.type === 'progress') {
+      setStatus(msg.message, 'info')
+    }
+  }
+</script>
+</body>
+</html>
