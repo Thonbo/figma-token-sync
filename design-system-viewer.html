@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI to Figma — Design System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0A0A0F;
+    --surface:   #111118;
+    --raised:    #18181f;
+    --border:    rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text:      #F0F0F5;
+    --text-2:    #A0A0B0;
+    --text-3:    #60607A;
+    --accent:    #5989BD;
+    --mono:      'JetBrains Mono', 'Fira Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  nav {
+    width: 200px;
+    min-width: 200px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .nav-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .nav-logo h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .nav-logo span {
+    font-size: 11px;
+    color: var(--text-3);
+    display: block;
+    margin-top: 2px;
+  }
+
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  nav a:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  nav a.active { color: var(--text); border-left-color: var(--accent); background: rgba(89,137,189,0.1); }
+
+  nav .nav-label {
+    padding: 16px 20px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    padding: 48px 56px;
+    max-width: 960px;
+  }
+
+  .page-header {
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .page-header p {
+    color: var(--text-2);
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  .version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(89,137,189,0.15);
+    border: 1px solid rgba(89,137,189,0.3);
+    color: #89D3F5;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 12px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #89D3F5; }
+
+  /* ── Sections ── */
+  section { margin-bottom: 64px; }
+  section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  section .section-desc {
+    color: var(--text-3);
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+
+  /* ── Collection header ── */
+  .collection-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    padding: 0 0 10px;
+    margin: 24px 0 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .collection-title:first-child { margin-top: 0; }
+
+  /* ── Color rows ── */
+  .token-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    transition: background 0.12s;
+    margin-bottom: 2px;
+  }
+  .token-row:hover { background: var(--raised); }
+
+  .swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.12);
+    flex-shrink: 0;
+  }
+
+  .token-info { flex: 1; min-width: 0; }
+  .token-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .token-ref {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 1px;
+  }
+  .token-ref .arrow { color: var(--text-3); margin: 0 4px; }
+  .token-ref .ref-name { color: #89D3F5; }
+
+  .token-value {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-2);
+    flex-shrink: 0;
+  }
+
+  .copy-btns { display: flex; gap: 4px; flex-shrink: 0; }
+  .copy-btn {
+    padding: 3px 8px;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-3);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: all 0.12s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--border-strong); }
+  .copy-btn.copied { color: #6fcf6f; border-color: rgba(111,207,111,0.4); }
+
+  /* Mode tabs */
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .mode-tab {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .mode-tab.active { background: rgba(89,137,189,0.2); border-color: rgba(89,137,189,0.4); color: #89D3F5; }
+
+  /* ── Scale tokens (spacing, radius) ── */
+  .scale-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    transition: background 0.12s;
+  }
+  .scale-row:hover { background: var(--raised); }
+  .scale-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    width: 130px;
+    flex-shrink: 0;
+  }
+  .scale-bar-wrap { flex: 1; }
+  .scale-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(89,137,189,0.7), rgba(137,211,245,0.5));
+    transition: width 0.3s ease;
+  }
+  .scale-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-2);
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Radius preview */
+  .radius-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .radius-card {
+    width: 80px;
+    text-align: center;
+  }
+  .radius-box {
+    width: 80px;
+    height: 60px;
+    background: rgba(89,137,189,0.2);
+    border: 1.5px solid rgba(89,137,189,0.4);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .radius-box:hover { background: rgba(89,137,189,0.3); }
+  .radius-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-2);
+    display: block;
+  }
+  .radius-val {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-3);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ── Typography ── */
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    transition: background 0.12s;
+  }
+  .type-row:hover { background: var(--raised); }
+  .type-meta {
+    width: 110px;
+    flex-shrink: 0;
+  }
+  .type-meta .t-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .type-preview {
+    flex: 1;
+    color: var(--text);
+  }
+
+  /* ── Empty / placeholder ── */
+  .empty {
+    padding: 24px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 12px;
+  }
+
+  /* ── String tokens ── */
+  .string-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    transition: background 0.12s;
+  }
+  .string-row:hover { background: var(--raised); }
+  .string-icon {
+    width: 40px; height: 40px;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    nav { display: none; }
+    main { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="nav-logo">
+    <h2>AI to Figma</h2>
+    <span>Design System</span>
+  </div>
+  <div class="nav-label">Tokens</div>
+  <a href="#colors" onclick="setActive(this)">Colors</a>
+  <a href="#semantic" onclick="setActive(this)">Semantic</a>
+  <a href="#spacing" onclick="setActive(this)">Spacing &amp; Radius</a>
+  <div class="nav-label">Styles</div>
+  <a href="#typography" onclick="setActive(this)">Typography</a>
+  <a href="#other" onclick="setActive(this)">Other</a>
+</nav>
+
+<!-- Main -->
+<main>
+  <div class="page-header">
+    <h1>AI to Figma Design System</h1>
+    <p>Visual token reference — sourced live from Figma Variables &amp; Styles</p>
+    <div class="version-badge"><span class="dot"></span> Connected · figma-console-mcp</div>
+  </div>
+
+  <!-- ── GLOBAL COLORS ── -->
+  <section id="colors">
+    <h2>Global Colors</h2>
+    <p class="section-desc">Raw palette tokens — the source of truth for all other colors.</p>
+
+    <div class="collection-title">Global tokens · Mode 1</div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#FF0000"></div>
+      <div class="token-info">
+        <div class="token-name">Red 1</div>
+      </div>
+      <div class="token-value">#FF0000</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#FF0000')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-red-1)')">var</button>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#00FF00"></div>
+      <div class="token-info">
+        <div class="token-name">Red 2</div>
+        <div class="token-ref" style="color:#f5a623;font-size:10px">⚠ named "Red 2" but resolves to green</div>
+      </div>
+      <div class="token-value">#00FF00</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#00FF00')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-red-2)')">var</button>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#AA0003"></div>
+      <div class="token-info">
+        <div class="token-name">Red 3</div>
+      </div>
+      <div class="token-value">#AA0003</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#AA0003')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-red-3)')">var</button>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#5989BD"></div>
+      <div class="token-info">
+        <div class="token-name">Blue 1</div>
+      </div>
+      <div class="token-value">#5989BD</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#5989BD')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-blue-1)')">var</button>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#89D3F5"></div>
+      <div class="token-info">
+        <div class="token-name">Blue 2</div>
+      </div>
+      <div class="token-value">#89D3F5</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#89D3F5')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-blue-2)')">var</button>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#84592E"></div>
+      <div class="token-info">
+        <div class="token-name">Messy</div>
+      </div>
+      <div class="token-value">#84592E</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#84592E')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-messy)')">var</button>
+      </div>
+    </div>
+
+    <div class="collection-title">Global tokens · Browns</div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#F5E6D3"></div>
+      <div class="token-info"><div class="token-name">Brown 100</div><div class="token-ref">#F5E6D3 · Lightest brown</div></div>
+      <div class="token-value">#F5E6D3</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#F5E6D3')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-brown-100)')">var</button>
+      </div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#C8956C"></div>
+      <div class="token-info"><div class="token-name">Brown 200</div><div class="token-ref">#C8956C · Light brown</div></div>
+      <div class="token-value">#C8956C</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#C8956C')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-brown-200)')">var</button>
+      </div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#A0622A"></div>
+      <div class="token-info"><div class="token-name">Brown 300</div><div class="token-ref">#A0622A · Mid brown</div></div>
+      <div class="token-value">#A0622A</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#A0622A')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-brown-300)')">var</button>
+      </div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#6B3A1F"></div>
+      <div class="token-info"><div class="token-name">Brown 400</div><div class="token-ref">#6B3A1F · Dark brown</div></div>
+      <div class="token-value">#6B3A1F</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#6B3A1F')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-brown-400)')">var</button>
+      </div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#3B1A0A"></div>
+      <div class="token-info"><div class="token-name">Brown 500</div><div class="token-ref">#3B1A0A · Darkest brown</div></div>
+      <div class="token-value">#3B1A0A</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'#3B1A0A')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-brown-500)')">var</button>
+      </div>
+    </div>
+
+    <!-- Fill Styles -->
+    <div class="collection-title">Fill Styles</div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:#FF0000"></div>
+      <div class="token-info"><div class="token-name">Red 1</div><div class="token-ref">#FF0000</div></div>
+      <div class="token-value">Fill Style</div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#CF0000"></div>
+      <div class="token-info"><div class="token-name">Red 2</div><div class="token-ref">#CF0000</div></div>
+      <div class="token-value">Fill Style</div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#AA0003"></div>
+      <div class="token-info"><div class="token-name">Red 3</div><div class="token-ref">#AA0003</div></div>
+      <div class="token-value">Fill Style</div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#5989BD"></div>
+      <div class="token-info"><div class="token-name">Blue 1</div><div class="token-ref">#5989BD</div></div>
+      <div class="token-value">Fill Style</div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#89D3F5"></div>
+      <div class="token-info"><div class="token-name">Blue 2</div><div class="token-ref">#89D3F5</div></div>
+      <div class="token-value">Fill Style</div>
+    </div>
+    <div class="token-row">
+      <div class="swatch" style="background:#FB00FF"></div>
+      <div class="token-info">
+        <div class="token-name">Crazy</div>
+        <div class="token-ref">#FB00FF · for crazyness</div>
+      </div>
+      <div class="token-value">Fill Style</div>
+    </div>
+  </section>
+
+  <!-- ── SEMANTIC TOKENS ── -->
+  <section id="semantic">
+    <h2>Semantic Tokens</h2>
+    <p class="section-desc">Intent-based tokens that reference global colors. Supports Light / Dark modes.</p>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="setMode('light',this)">Light</button>
+      <button class="mode-tab" onclick="setMode('dark',this)">Dark</button>
+    </div>
+
+    <div class="collection-title">Semantic Tokens · Colors</div>
+
+    <!-- primary_brand_color -->
+    <div class="token-row">
+      <div class="swatch" id="swatch-primary"></div>
+      <div class="token-info">
+        <div class="token-name">primary_brand_color</div>
+        <div class="token-ref">
+          <span class="arrow">→</span>
+          <span class="ref-name" id="ref-primary"></span>
+        </div>
+      </div>
+      <div class="token-value" id="val-primary"></div>
+      <div class="copy-btns">
+        <button class="copy-btn" id="cpyhex-primary" onclick="copyById(this,'val-primary')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-primary-brand-color)')">var</button>
+      </div>
+    </div>
+
+    <!-- secondary_brand_color -->
+    <div class="token-row">
+      <div class="swatch" id="swatch-secondary"></div>
+      <div class="token-info">
+        <div class="token-name">secondary_brand_color</div>
+        <div class="token-ref">
+          <span class="arrow">→</span>
+          <span class="ref-name" id="ref-secondary"></span>
+        </div>
+      </div>
+      <div class="token-value" id="val-secondary"></div>
+      <div class="copy-btns">
+        <button class="copy-btn" id="cpyhex-secondary" onclick="copyById(this,'val-secondary')">hex</button>
+        <button class="copy-btn" onclick="copy(this,'var(--color-secondary-brand-color)')">var</button>
+      </div>
+    </div>
+
+    <div class="collection-title">Semantic Tokens · Rounding</div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:var(--raised,#18181f);border-radius:24px;border:1px solid rgba(89,137,189,0.4)"></div>
+      <div class="token-info">
+        <div class="token-name">button_rounding</div>
+        <div class="token-ref"><span class="arrow">→</span><span class="ref-name">Rounding 200</span></div>
+      </div>
+      <div class="token-value">24px · both modes</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'24')">px</button>
+        <button class="copy-btn" onclick="copy(this,'var(--button-rounding)')">var</button>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="swatch" style="background:var(--raised,#18181f);border-radius:16px;border:1px solid rgba(89,137,189,0.4)"></div>
+      <div class="token-info">
+        <div class="token-name">frame_rounding</div>
+        <div class="token-ref"><span class="arrow">→</span><span class="ref-name">Rounding 100</span></div>
+      </div>
+      <div class="token-value">16px · both modes</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'16')">px</button>
+        <button class="copy-btn" onclick="copy(this,'var(--frame-rounding)')">var</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SPACING & RADIUS ── -->
+  <section id="spacing">
+    <h2>Spacing &amp; Radius</h2>
+    <p class="section-desc">Dimension tokens from Global tokens collection.</p>
+
+    <div class="collection-title">Spacing</div>
+
+    <div class="scale-row">
+      <div class="scale-label"><span style="font-family:var(--mono);font-size:12px">Spacing 200</span></div>
+      <div class="scale-bar-wrap"><div class="scale-bar" style="width:24%"></div></div>
+      <div class="scale-val">24px</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'24px')">px</button>
+      </div>
+    </div>
+
+    <div class="collection-title" style="margin-top:32px">Border Radius</div>
+
+    <div class="radius-grid">
+      <div class="radius-card">
+        <div class="radius-box" style="border-radius:16px" onclick="copy(this,'16px')"></div>
+        <span class="radius-name">Rounding 100</span>
+        <span class="radius-val">16px</span>
+      </div>
+      <div class="radius-card">
+        <div class="radius-box" style="border-radius:24px" onclick="copy(this,'24px')"></div>
+        <span class="radius-name">Rounding 200</span>
+        <span class="radius-val">24px</span>
+      </div>
+      <div class="radius-card">
+        <div class="radius-box" style="border-radius:36px" onclick="copy(this,'36px')"></div>
+        <span class="radius-name">Rounding 300</span>
+        <span class="radius-val">36px</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TYPOGRAPHY ── -->
+  <section id="typography">
+    <h2>Typography</h2>
+    <p class="section-desc">Text styles defined in the Figma file.</p>
+
+    <div class="collection-title">Text Styles</div>
+
+    <div class="type-row">
+      <div class="type-meta"><span class="t-name">H1</span></div>
+      <div class="type-preview" style="font-size:32px;font-weight:700;letter-spacing:-0.02em;line-height:1.2">
+        The quick brown fox
+      </div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta"><span class="t-name">Paragraph</span></div>
+      <div class="type-preview" style="font-size:14px;font-weight:400;line-height:1.6">
+        The quick brown fox jumps over the lazy dog
+      </div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta"><span class="t-name">Label Lg</span></div>
+      <div class="type-preview" style="font-size:13px;font-weight:500;letter-spacing:0.01em">
+        The quick brown fox
+      </div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta"><span class="t-name">Label Md</span></div>
+      <div class="type-preview" style="font-size:12px;font-weight:500;letter-spacing:0.01em">
+        The quick brown fox
+      </div>
+    </div>
+  </section>
+
+  <!-- ── OTHER ── -->
+  <section id="other">
+    <h2>Other Tokens</h2>
+    <p class="section-desc">Remaining variables from the "Important other tokens" collection.</p>
+
+    <div class="collection-title">Important other tokens</div>
+
+    <div class="string-row">
+      <div class="string-icon">#</div>
+      <div class="token-info">
+        <div class="token-name">Margins</div>
+        <div class="token-ref">FLOAT</div>
+      </div>
+      <div class="token-value" style="font-family:var(--mono);font-size:12px">100001</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'100001')">copy</button>
+      </div>
+    </div>
+
+    <div class="string-row">
+      <div class="string-icon">T</div>
+      <div class="token-info">
+        <div class="token-name">Some</div>
+        <div class="token-ref">STRING</div>
+      </div>
+      <div class="token-value" style="font-family:var(--mono);font-size:12px">"Thing"</div>
+      <div class="copy-btns">
+        <button class="copy-btn" onclick="copy(this,'Thing')">copy</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // ── Mode switcher ──────────────────────────────────────────────────────────
+  const modes = {
+    light: {
+      primary:   { hex: '#AA0003', ref: 'Red 3' },
+      secondary: { hex: '#5989BD', ref: 'Blue 1' },
+    },
+    dark: {
+      primary:   { hex: '#FF0000', ref: 'Red 1' },
+      secondary: { hex: '#89D3F5', ref: 'Blue 2' },
+    },
+  }
+
+  let currentMode = 'light'
+
+  function setMode(mode, btn) {
+    currentMode = mode
+    document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    renderSemantic()
+  }
+
+  function renderSemantic() {
+    const m = modes[currentMode]
+    document.getElementById('swatch-primary').style.background   = m.primary.hex
+    document.getElementById('swatch-secondary').style.background = m.secondary.hex
+    document.getElementById('ref-primary').textContent   = m.primary.ref
+    document.getElementById('ref-secondary').textContent = m.secondary.ref
+    document.getElementById('val-primary').textContent   = m.primary.hex
+    document.getElementById('val-secondary').textContent = m.secondary.hex
+  }
+
+  renderSemantic()
+
+  // ── Copy ──────────────────────────────────────────────────────────────────
+  function copy(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent
+      btn.textContent = '✓'
+      btn.classList.add('copied')
+      setTimeout(() => {
+        btn.textContent = orig
+        btn.classList.remove('copied')
+      }, 1500)
+    })
+  }
+
+  function copyById(btn, id) {
+    const text = document.getElementById(id).textContent
+    copy(btn, text)
+  }
+
+  // ── Active nav ─────────────────────────────────────────────────────────────
+  function setActive(el) {
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'))
+    el.classList.add('active')
+  }
+
+  // Highlight on scroll
+  const sections = ['colors','semantic','spacing','typography','other']
+  const links = {}
+  sections.forEach(id => {
+    links[id] = document.querySelector(`nav a[href="#${id}"]`)
+  })
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        sections.forEach(id => links[id] && links[id].classList.remove('active'))
+        links[e.target.id] && links[e.target.id].classList.add('active')
+      }
+    })
+  }, { rootMargin: '-30% 0px -60% 0px' })
+
+  sections.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) observer.observe(el)
+  })
+</script>
+</body>
+</html>
